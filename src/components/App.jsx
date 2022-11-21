@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { Box } from './Box';
 import { ContactForm } from './ContactsForm/ContactsForm';
 import { FilterContacts } from './Filter/Filter';
@@ -7,111 +7,87 @@ import { theme } from './Theme';
 
 const KEY_CONTACTS = 'contacts_database';
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState(() => {
+    const contactsFromLS = JSON.parse(localStorage.getItem(KEY_CONTACTS));
+    return contactsFromLS ? contactsFromLS : [];
+  });
+  const [filter, setFilter] = useState('');
 
-  //Life cycles
+  useEffect(() => {
+    localStorage.setItem(KEY_CONTACTS, JSON.stringify(contacts));
+  }, [contacts]);
 
-  componentDidMount() {
-    const contacts = JSON.parse(localStorage.getItem(KEY_CONTACTS));
-    if (contacts) {
-      this.setState({ contacts });
-    }
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.contacts !== prevState.contacts) {
-      localStorage.setItem(KEY_CONTACTS, JSON.stringify(this.state.contacts));
-    }
-  }
-
-  //
-
-  addContact = contact => {
+  const addContact = contact => {
     if (
-      this.state.contacts.find(
+      contacts.find(
         cont => cont.name.toLowerCase() === contact.name.toLowerCase()
       )
     ) {
       return alert(`${contact.name} is already in contacts`);
     }
-    this.setState(prevState => ({
-      contacts: [...prevState.contacts, contact],
-    }));
+    setContacts(prevState => [...prevState, contact]);
   };
 
-  onDelete = id => {
-    const newArray = this.state.contacts.filter(c => c.id !== id);
-    this.setState(prevState => ({
-      contacts: [...newArray],
-    }));
+  const onDelete = id => {
+    setContacts(contacts.filter(c => c.id !== id));
   };
 
-  onChange = event => {
-    const { name, value } = event.currentTarget;
-    this.setState({ [name]: value });
+  const onChange = event => {
+    setFilter(event.currentTarget.value);
   };
 
-  onFilter = () => {
-    const { contacts, filter } = this.state;
-    const normalizedFilter = filter.toLowerCase().trim();
+  const onFilter = () => {
     return contacts.filter(contact =>
-      contact.name.toLowerCase().includes(normalizedFilter)
+      contact.name.toLowerCase().includes(filter.toLowerCase())
     );
   };
 
-  render() {
-    const filteredData = this.onFilter();
-
-    return (
+  return (
+    <Box
+      as="section"
+      width={380}
+      listStyle="none"
+      mx="auto"
+      mt="20px"
+      p="20px"
+      borderRadius="20px"
+      backgroundColor={theme.colors.mainBackground}
+      boxShadow={theme.shadows.custom}
+    >
       <Box
-        as="section"
-        width={380}
-        listStyle="none"
-        mx="auto"
-        mt="20px"
-        p="20px"
-        borderRadius="20px"
-        backgroundColor={theme.colors.mainBackground}
-        boxShadow={theme.shadows.custom}
+        as="h1"
+        display="flex"
+        justifyContent="center"
+        color={theme.colors.text}
+        fontFamily={theme.fonts.title}
       >
-        <Box
-          as="h1"
-          display="flex"
-          justifyContent="center"
-          color={theme.colors.text}
-          fontFamily={theme.fonts.title}
-        >
-          PhoneBook
-        </Box>
-        <ContactForm onSubmit={this.addContact} />
-        <Box
-          as="span"
-          width={330}
-          height={3}
-          backgroundColor={theme.colors.text}
-          display="flex"
-          mx="auto"
-          my="40"
-        />
-        <Box
-          as="h2"
-          my={40}
-          display="flex"
-          color={theme.colors.text}
-          fontFamily={theme.fonts.title}
-          justifyContent="center"
-        >
-          {this.state.contacts.length > 0 ? 'Contacts' : 'No contacts'}
-        </Box>
-        {this.state.contacts.length > 1 && (
-          <FilterContacts onChange={this.onChange} value={this.state.filter} />
-        )}
-        <ContactList contacts={filteredData} onDelete={this.onDelete} />
+        PhoneBook
       </Box>
-    );
-  }
-}
+      <ContactForm onSubmit={addContact} />
+      <Box
+        as="span"
+        width={330}
+        height={3}
+        backgroundColor={theme.colors.text}
+        display="flex"
+        mx="auto"
+        my="40"
+      />
+      <Box
+        as="h2"
+        my={40}
+        display="flex"
+        color={theme.colors.text}
+        fontFamily={theme.fonts.title}
+        justifyContent="center"
+      >
+        {contacts.length > 0 ? 'Contacts' : 'No contacts'}
+      </Box>
+      {contacts.length > 1 && (
+        <FilterContacts onChange={onChange} value={filter} />
+      )}
+      <ContactList contacts={onFilter()} onDelete={onDelete} />
+    </Box>
+  );
+};
